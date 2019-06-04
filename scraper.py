@@ -90,7 +90,7 @@ class SampleSheetFinder:
 		for subfolder in root_folder.iterdir():
 			if subfolder.is_file(): continue
 			expected_filename = get_expected_filename(subfolder)
-			logger.debug(f"Testing if {expected_filename} exists...")
+			#logger.debug(f"Testing if {expected_filename} exists...")
 			if expected_filename.exists():
 				self.defined_sample_sheets.append(expected_filename)
 			else:
