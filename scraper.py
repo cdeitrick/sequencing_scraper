@@ -76,10 +76,14 @@ class SampleSheetFinder:
 	def run(self, root_folder: Path):
 		index = self.read_index()
 		self.get_expected_files(root_folder)
+		logger.info(f"Found {len(self.defined_sample_sheets)} SampleSheets.")
+		logger.info(f"{len(self.missing_sheets)} folders were missing SampleSheets.")
 		self.globbed_sample_sheets = self.get_globbed_files(root_folder)
+		logger.info(f"Found {len(self.defined_sample_sheets)} SampleSheets using glob.")
 		self.selected_sample_sheets = self.filter_samplesheets(index)
+		logger.info(f"Selected {len(self.selected_sample_sheets)} SampleSheets.")
 		self.organized_samplesheets = self.organize_samplesheets(self.selected_sample_sheets)
-
+		logger.info("Generating the output files...")
 		self.generate_output()
 		self.update_index()
 

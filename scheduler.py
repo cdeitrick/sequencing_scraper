@@ -2,6 +2,7 @@ from pathlib import Path
 import time
 from loguru import logger
 import scraper
+import datetime
 def checkdir(path)->Path:
 	if not path.exists():
 		path.mkdir()
@@ -34,8 +35,9 @@ class Scheduler:
 				time.sleep(self.update_interval)
 
 	def run_scraper(self, source_folder:Path):
-
-		finder = scraper.SampleSheetFinder(self.index_filename, self.beagle_sync_output_files)
+		now = datetime.datetime.now()
+		output_folder = self.beagle_sync_output_files / f"{now.year}-{now.month}-{now.day}"
+		finder = scraper.SampleSheetFinder(self.index_filename, output_folder)
 		finder.run(source_folder)
 
 
