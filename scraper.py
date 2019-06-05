@@ -1,25 +1,8 @@
 import csv
-import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from loguru import logger
-
-
-
-
-def extract_date_from_sample_id(sample_id: str) -> Optional[datetime.date]:
-	if not isinstance(sample_id, str): return None
-	string = sample_id.split('_')[0]
-
-	try:
-		month = int(string[:2])
-		day = int(string[2:4])
-		year = 2000 + int(string[4:])
-		result = datetime.date(year = year, month = month, day = day)
-	except ValueError:
-		result = None
-	return result
 
 
 def extract_fieldnames_from_samplesheet(samplesheet: Path) -> List[str]:
@@ -39,26 +22,17 @@ def get_sheet_header(reader: csv.DictReader) -> List[Dict[str, str]]:
 	return ls
 
 
-def get_container_id(filename: Path) -> Optional[str]:
-	"""Extracts the containerID from a samplesheet"""
-	for line in filename.read_text().split("\n"):
-		fields = line.split(',')
-		if fields[0] == 'ContainerID':
-			return fields[1]
-
-
-def containerid_to_date(container_id: Optional[str]) -> Optional[str]:
-	"""Extracts the sequencing date from a samplesheet"""
-	if container_id:
-		year = container_id[:2]
-		month = container_id[2:4]
-		day = container_id[4:]
-		container_id = f"20{year}-{month}-{day}"
-	return container_id
-
-
 def get_expected_filename(folder: Path) -> Path:
 	return folder / "SampleSheet.csv"
+
+
+def get_sequencing_date_from_folder(folder: Path) -> str:
+	date_string = folder.name.split('_')[0].strip()
+	year = date_string[:2]
+	month = date_string[2:4]
+	day = date_string[4:]
+
+	return f"20{year}-{month}-{day}"
 
 
 class SampleSheetFinder:
@@ -78,8 +52,8 @@ class SampleSheetFinder:
 		self.get_expected_files(root_folder)
 		logger.info(f"Found {len(self.defined_sample_sheets)} SampleSheets.")
 		logger.info(f"{len(self.missing_sheets)} folders were missing SampleSheets.")
-		self.globbed_sample_sheets = self.get_globbed_files(root_folder)
-		logger.info(f"Found {len(self.defined_sample_sheets)} SampleSheets using glob.")
+		#self.globbed_sample_sheets = self.get_globbed_files(root_folder)
+		#logger.info(f"Found {len(self.globbed_sample_sheets)} SampleSheets using glob.")
 		self.selected_sample_sheets = self.filter_samplesheets(index)
 		logger.info(f"Selected {len(self.selected_sample_sheets)} SampleSheets.")
 		self.organized_samplesheets = self.organize_samplesheets(self.selected_sample_sheets)
@@ -94,7 +68,7 @@ class SampleSheetFinder:
 		for subfolder in root_folder.iterdir():
 			if subfolder.is_file(): continue
 			expected_filename = get_expected_filename(subfolder)
-			#logger.debug(f"Testing if {expected_filename} exists...")
+			# logger.debug(f"Testing if {expected_filename} exists...")
 			if expected_filename.exists():
 				self.defined_sample_sheets.append(expected_filename)
 			else:
@@ -117,12 +91,14 @@ class SampleSheetFinder:
 		""" organizes samplesheets by sequencing date."""
 		dates = dict()
 		for samplesheet in selected_sheets:
-			container_id = get_container_id(samplesheet)
-			key = containerid_to_date(container_id)
+			parent_folder = samplesheet.parent
+			key = get_sequencing_date_from_folder(parent_folder)
 			if key not in dates:
 				dates[key] = [samplesheet]
 			else:
 				dates[key].append(samplesheet)
+		# Remove repeated samplesheets. Will happen if glob is used.
+		dates = {k:sorted(set(v)) for k,v in dates.items()}
 		return dates
 
 	def filter_samplesheets(self, indexed_sheets: List[Path]):
@@ -171,7 +147,6 @@ class SampleSheetFinder:
 		self.write_organized_samplesheets(self.organized_samplesheets, file_folder)
 
 	def write_organized_samplesheets(self, organized, output_folder):
-
 		for date_string, sheets in organized.items():
 			output_filename = output_folder / f"{date_string}.SampleSheet.csv"
 			if len(sheets) > 1:
@@ -212,4 +187,3 @@ class SampleSheetFinder:
 			for path in self.selected_sample_sheets:
 				p = path.resolve()
 				file1.write(f"{p}\n")
-

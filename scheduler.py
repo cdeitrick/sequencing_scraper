@@ -9,7 +9,7 @@ def checkdir(path)->Path:
 	return path
 
 class Scheduler:
-	def __init__(self, wait_time:int = 3600*24, update_interval = 3600):
+	def __init__(self, wait_time:int = 3600*24, update_interval = 1800):
 		self.wait_time = wait_time
 		self.update_interval = update_interval # Time between check as to whether it is time to run the scraper again.
 		parent_config_folder = checkdir(Path("/home/cld100/github/config"))
@@ -36,7 +36,7 @@ class Scheduler:
 
 	def run_scraper(self, source_folder:Path):
 		now = datetime.datetime.now()
-		output_folder = self.beagle_sync_output_files / f"{now.year}-{now.month}-{now.day}"
+		output_folder = self.beagle_sync_output_files / f"{now.year}-{now.month:>02}-{now.day:>02}"
 		finder = scraper.SampleSheetFinder(self.index_filename, output_folder)
 		finder.run(source_folder)
 
